@@ -216,7 +216,9 @@ struct T3LiveContainerOverlayView: View {
 
     /// When a guest main returns, LiveContainer stores its error under "error"
     /// and exits the process. The next launch surfaces it — otherwise a failed
-    /// SideStore boot looks like the app simply closed.
+    /// SideStore boot looks like the app simply closed. This overwrites rather
+    /// than guards: the auto-prompt usually presents the sheet first, and the
+    /// guest error must win over the generic prompt.
     private func surfaceStoredGuestError() {
         let stored = UserDefaults.standard.string(forKey: "error")
             ?? LCUtils.appGroupUserDefault.string(forKey: "error")
@@ -225,7 +227,6 @@ struct T3LiveContainerOverlayView: View {
         LCUtils.appGroupUserDefault.removeObject(forKey: "error")
         logEvent("stored guest error: \(stored)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [self] in
-            guard !isManualImportPresented else { return }
             manualImportError = "SideStore failed to start: \(stored)"
             isManualImportPresented = true
         }
