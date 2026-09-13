@@ -512,6 +512,15 @@ if [ "$T3_LIVE_EMBED_SIDESTORE" = "1" ]; then
                     "$APP_PATH/Frameworks/SideStoreApp.framework/Info.plist"
                 plutil -replace LCBundleIdentifier -string com.SideStore.SideStore \
                     "$APP_PATH/Frameworks/SideStoreApp.framework/Info.plist"
+                # The app bundle is read-only at runtime, so the host can never
+                # run its patch pass on the SideStore binary. Shipping the
+                # current patch revision marks the binary as already patched;
+                # the launch path then only verifies the store's signature and
+                # boots the dylib directly.
+                plutil -create binary1 \
+                    "$APP_PATH/Frameworks/SideStoreApp.framework/LCAppInfo.plist" 2>/dev/null || true
+                plutil -replace LCPatchRevision -integer 7 \
+                    "$APP_PATH/Frameworks/SideStoreApp.framework/LCAppInfo.plist"
                 ldid -S "$APP_PATH/Frameworks/SideStoreApp.framework/SideStore.dylib" 2>/dev/null || true
                 SS_LICENSE="$APP_PATH/Frameworks/SideStoreApp.framework/LICENSE-SIDESTORE-AGPL.txt"
                 if [ ! -f "$SS_LICENSE" ]; then
