@@ -4,6 +4,29 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
+/// Delegate for guest launches from the T3 overlay. The stock LiveContainer UI
+/// implements this per view; from the overlay the only required answer is
+/// "yes, run anyway" when LiveContainer asks whether to leave multitask mode.
+final class T3OverlayAppModelDelegate: LCAppModelDelegate {
+    static let shared = T3OverlayAppModelDelegate()
+
+    private init() {}
+
+    func closeNavigationView() {}
+
+    func changeAppVisibility(app: LCAppModel) {}
+
+    func jitLaunch(appName: String, classicMode: UInt) async {}
+
+    func jitLaunch(withScript script: String, appName: String, classicMode: UInt) async {}
+
+    func jitLaunch(withPID pid: Int, withScript script: String?, appName: String) async {}
+
+    func showRunWhenMultitaskAlert() async -> Bool? {
+        true
+    }
+}
+
 struct T3LiveContainerOverlayView: View {
     @EnvironmentObject private var sharedModel: SharedModel
 
@@ -557,17 +580,20 @@ struct T3LiveContainerOverlayView: View {
     }
 
     /// Launches the embedded SideStore guest directly. `LCUtils.openSideStore`
-    /// is unusable here: it drops all errors and, with the host in multitask
-    /// mode, hits `delegate?.showRunWhenMultitaskAlert` with a nil delegate and
-    /// silently returns. Launching non-multitask bypasses that path, and the
-    /// thrown errors surface in the sheet and the diagnostics log.
+    /// is unusable here: it drops all errors, and in multitask mode
+    /// `runApp` hits `delegate?.showRunWhenMultitaskAlert` with a nil delegate
+    /// and silently returns. A delegate that always answers "run" plus error
+    /// surfacing makes the launch deterministic; failures land in the sheet
+    /// and the diagnostics log.
     private func launchEmbeddedSideStore(urlStr: String? = nil) {
         Task {
             do {
-                let sideStoreApp = LCAppModel(appInfo: BuiltInSideStoreAppInfo.shared)
+                let sideStoreApp = LCAppModel(
+                    appInfo: BuiltInSideStoreAppInfo.shared,
+                    delegate: T3OverlayAppModelDelegate.shared
+                )
                 try await sideStoreApp.runApp(
                     bundleIdOverride: "builtinSideStore",
-                    multitask: false,
                     urlStr: urlStr
                 )
                 logEvent("embedded SideStore guest launched")
