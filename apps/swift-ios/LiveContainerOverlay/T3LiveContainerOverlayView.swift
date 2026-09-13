@@ -93,7 +93,10 @@ struct T3LiveContainerOverlayView: View {
                         Button {
                             logEvent("opening embedded SideStore for Apple ID sign-in")
                             certificateRequestStartedAt = .now
-                            LCUtils.openSideStore()
+                            // Dismiss first: the guest UI takes over the whole
+                            // window, and a presented sheet blocks the swap.
+                            isManualImportPresented = false
+                            launchEmbeddedSideStore()
                             scheduleCertificateImportPolling()
                         } label: {
                             Label("Sign in with Apple ID", systemImage: "apple.logo")
@@ -442,7 +445,7 @@ struct T3LiveContainerOverlayView: View {
             certificateRequestState = state
             certificateRequestStartedAt = .now
             logEvent("embedded SideStore present, launching for sign-in")
-            LCUtils.openSideStore(
+            launchEmbeddedSideStore(
                 urlStr: "certificate?callback_template=\(certificateCallbackTemplate())&state=\(state)"
             )
             scheduleCertificateImportPolling()
@@ -551,6 +554,32 @@ struct T3LiveContainerOverlayView: View {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
         return callback.addingPercentEncoding(withAllowedCharacters: allowed)
             ?? callback
+    }
+
+    /// Launches the embedded SideStore guest directly. `LCUtils.openSideStore`
+    /// is unusable here: it drops all errors and, with the host in multitask
+    /// mode, hits `delegate?.showRunWhenMultitaskAlert` with a nil delegate and
+    /// silently returns. Launching non-multitask bypasses that path, and the
+    /// thrown errors surface in the sheet and the diagnostics log.
+    private func launchEmbeddedSideStore(urlStr: String? = nil) {
+        Task {
+            do {
+                let sideStoreApp = LCAppModel(appInfo: BuiltInSideStoreAppInfo.shared)
+                try await sideStoreApp.runApp(
+                    bundleIdOverride: "builtinSideStore",
+                    multitask: false,
+                    urlStr: urlStr
+                )
+                logEvent("embedded SideStore guest launched")
+            } catch {
+                let message = "\(error)"
+                logEvent("embedded SideStore launch FAILED: \(message)")
+                await MainActor.run {
+                    manualImportError = "SideStore failed to open: \(message)"
+                    isManualImportPresented = true
+                }
+            }
+        }
     }
 
     /// Passive poll while the certificate sheet is open with the embedded
