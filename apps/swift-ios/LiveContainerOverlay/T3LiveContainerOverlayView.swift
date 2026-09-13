@@ -70,6 +70,7 @@ struct T3LiveContainerOverlayView: View {
                     forKey: "LCMultitaskMode"
                 )
                 LCUtils.appGroupUserDefault.set(true, forKey: "LCSkipTerminatedScreen")
+                surfaceStoredGuestError()
                 autoPromptCertificateIfNeeded()
             }
             .onOpenURL { url in
@@ -210,6 +211,23 @@ struct T3LiveContainerOverlayView: View {
         if UserDefaults.sideStoreExist() {
             scheduleCertificateImportPolling()
             startKeychainRefreshPolling()
+        }
+    }
+
+    /// When a guest main returns, LiveContainer stores its error under "error"
+    /// and exits the process. The next launch surfaces it — otherwise a failed
+    /// SideStore boot looks like the app simply closed.
+    private func surfaceStoredGuestError() {
+        let stored = UserDefaults.standard.string(forKey: "error")
+            ?? LCUtils.appGroupUserDefault.string(forKey: "error")
+        guard let stored, !stored.isEmpty else { return }
+        UserDefaults.standard.removeObject(forKey: "error")
+        LCUtils.appGroupUserDefault.removeObject(forKey: "error")
+        logEvent("stored guest error: \(stored)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [self] in
+            guard !isManualImportPresented else { return }
+            manualImportError = "SideStore failed to start: \(stored)"
+            isManualImportPresented = true
         }
     }
 
