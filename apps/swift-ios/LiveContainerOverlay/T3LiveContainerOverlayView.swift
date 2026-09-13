@@ -593,6 +593,11 @@ struct T3LiveContainerOverlayView: View {
                     delegate: T3OverlayAppModelDelegate.shared
                 )
                 try await sideStoreApp.runApp(
+                    // Force the in-process launch path: the multitask path
+                    // requires LiveProcess.appex, which the 1-App-ID build
+                    // strips. The delegate covers the guard that fires when
+                    // MultitaskManager.isMultitasking() is true anyway.
+                    multitask: false,
                     bundleIdOverride: "builtinSideStore",
                     urlStr: urlStr
                 )
