@@ -516,10 +516,16 @@ if [ "$T3_LIVE_EMBED_SIDESTORE" = "1" ]; then
                 # run its patch pass on the SideStore binary. Shipping the
                 # current patch revision marks the binary as already patched;
                 # the launch path then only verifies the store's signature and
-                # boots the dylib directly.
+                # boots the dylib directly. LCDataUUID/LCContainers satisfy the
+                # guest container lookup, which runs before the isSideStore
+                # branch points the home directory at Documents/SideStore.
                 plutil -create binary1 \
                     "$APP_PATH/Frameworks/SideStoreApp.framework/LCAppInfo.plist" 2>/dev/null || true
                 plutil -replace LCPatchRevision -integer 7 \
+                    "$APP_PATH/Frameworks/SideStoreApp.framework/LCAppInfo.plist"
+                plutil -replace LCDataUUID -string "SideStore" \
+                    "$APP_PATH/Frameworks/SideStoreApp.framework/LCAppInfo.plist"
+                plutil -replace LCContainers -json '[{"folderName":"SideStore","name":"SideStore"}]' \
                     "$APP_PATH/Frameworks/SideStoreApp.framework/LCAppInfo.plist"
                 ldid -S "$APP_PATH/Frameworks/SideStoreApp.framework/SideStore.dylib" 2>/dev/null || true
                 SS_LICENSE="$APP_PATH/Frameworks/SideStoreApp.framework/LICENSE-SIDESTORE-AGPL.txt"
