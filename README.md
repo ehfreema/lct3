@@ -16,6 +16,9 @@ too, kept current with upstream.
 
 - **Run iOS App from a thread.** Pick an Xcode project or a build recipe, and the server builds a
   device IPA with status streaming, a watchdog, and deterministic, content-addressed artifacts.
+- **Self-contained signing.** T3 Code Live embeds SideStore: sign in with your Apple ID once and
+  the app mints, stores, and renews its own signing certificate — no SideStore or AltStore install
+  required. A manual `.p12` import (Settings → Signing Certificate) is available as an alternative.
 - **On-device runtime.** Verifies artifact integrity (SHA-256), installs with rollback, and manages
   the signing certificate lifecycle inside the sideloaded Live app.
 - **Resilient transfer.** Signed URLs with a chunked, resumable fallback for older servers.
@@ -24,16 +27,23 @@ too, kept current with upstream.
 
 There are no releases yet — build from source. You need a Mac with a current Xcode and iOS 17+.
 
+The iPhone client ships in two flavors:
+
+- **T3 Code Live** (`apps/swift-ios/LiveContainerOverlay/build-live-ipa.sh`) — the full app wrapped
+  in a LiveContainer host with the embedded SideStore signer. One bundle ID, sideloads with any
+  free-account signer (iLoader, SideStore, AltStore), and signs in with an Apple ID on first run.
+- **Standard app** (`T3Code.xcodeproj`, below) — the plain SwiftUI client for App Store-style
+  distribution. MIT-licensed, no LiveContainer code.
+
 ```bash
 git clone https://github.com/ehfreema/lct3.git
 cd lct3
-xcodebuild -project apps/swift-ios/T3Code.xcodeproj -scheme T3Code -configuration Release \
-  -destination 'generic/platform=iOS' -derivedDataPath apps/swift-ios/.derivedData-device build
+sh apps/swift-ios/LiveContainerOverlay/build-live-ipa.sh   # T3 Code Live IPA
 ```
 
-The build is unsigned by default. Sideload the resulting `T3Code.app` into the LiveContainer
-runtime, or sign it with your own developer identity. Then start a T3 Code server on your machine
-(`npx t3@latest`) and pair the phone over your network with the pairing URL.
+The Live IPA is unsigned by default; your signer re-signs it on install. Start a T3 Code server on
+your machine (`npx t3@latest`), pair the phone over your network with the pairing URL, and sign in
+with your Apple ID when the certificate sheet appears.
 
 For day-to-day development and testing, run the Debug build on a simulator:
 
@@ -66,9 +76,10 @@ original license remain in [LICENSE](LICENSE).
 
 The iPhone runtime builds on [LiveContainer](https://github.com/LiveContainer/LiveContainer)
 (AGPL-3.0, pinned commit in
-[build-live-ipa.sh](apps/swift-ios/LiveContainerOverlay/build-live-ipa.sh)). The
-[LiveContainerOverlay](apps/swift-ios/LiveContainerOverlay) sources are LiveContainer-derived
-and stay under the GNU AGPL version 3 — the Live IPA is distributed together with its
-corresponding source. Details in
+[build-live-ipa.sh](apps/swift-ios/LiveContainerOverlay/build-live-ipa.sh)), and the embedded
+signer is [SideStore](https://github.com/LiveContainer/SideStore) (AGPL-3.0, nightly pinned in the
+same script). The [LiveContainerOverlay](apps/swift-ios/LiveContainerOverlay) sources are
+LiveContainer-derived and stay under the GNU AGPL version 3 — the Live IPA is distributed together
+with its corresponding source. Details in
 [AGPL-NOTICE.md](apps/swift-ios/LiveContainerOverlay/AGPL-NOTICE.md). The standard SwiftUI
-target contains no LiveContainer code and keeps the MIT license.
+target contains no LiveContainer or SideStore code and keeps the MIT license.

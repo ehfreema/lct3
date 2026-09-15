@@ -12,6 +12,9 @@ Source locations:
 - LiveContainer: <https://github.com/LiveContainer/LiveContainer>
   (pinned at `7e356bc3ab0e05584977281937da9308740b997b` in
   `build-live-ipa.sh`)
+- SideStore (embedded as `Frameworks/SideStoreApp.framework`):
+  <https://github.com/LiveContainer/SideStore> (nightly release pinned in
+  `build-live-ipa.sh`)
 
 ## Scope in this repository
 
@@ -22,10 +25,11 @@ are derived from LiveContainer at the pinned commit and are governed by the
 GNU AGPL version 3, not by the MIT license at the repository root. Copyright
 belongs to the LiveContainer contributors.
 
-The standard T3 Code SwiftUI target contains no LiveContainer source or assets.
-It keeps the MIT license of the repository root and its App Store distribution
-path.
+The standard T3 Code SwiftUI target contains no LiveContainer or SideStore source
+or assets. It keeps the MIT license of the repository root and its App Store
+distribution path.
 
 The build script adds the source archive name and SHA-256 value to
 `T3-LIVE-SOURCE.txt` in the generated app bundle, and ships
-`LICENSE-LIVECONTAINER-AGPL.txt` beside `LICENSE-T3CODE.txt`.
+`LICENSE-LIVECONTAINER-AGPL.txt` beside `LICENSE-T3CODE.txt`. The embedded
+SideStore framework ships `LICENSE-SIDESTORE-AGPL.txt`.
