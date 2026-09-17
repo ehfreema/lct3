@@ -10,6 +10,11 @@ import UniformTypeIdentifiers
 final class T3OverlayAppModelDelegate: LCAppModelDelegate {
     static let shared = T3OverlayAppModelDelegate()
 
+    /// SideStore's CoreData stack cannot load twice in one process
+    /// ("Can't add the same store twice"), so the guest may only be
+    /// launched once per host process lifetime.
+    static var hasLaunchedSideStore = false
+
     private init() {}
 
     func closeNavigationView() {}
@@ -605,6 +610,14 @@ struct T3LiveContainerOverlayView: View {
     /// surfacing makes the launch deterministic; failures land in the sheet
     /// and the diagnostics log.
     private func launchEmbeddedSideStore(urlStr: String? = nil) {
+        if T3OverlayAppModelDelegate.hasLaunchedSideStore {
+            logEvent("embedded SideStore already launched this session; skipping relaunch")
+            await MainActor.run {
+                manualImportError = "SideStore already launched once in this session. Restart T3 Code Live to open it again."
+                isManualImportPresented = true
+            }
+            return
+        }
         Task {
             do {
                 let sideStoreApp = LCAppModel(
@@ -620,6 +633,7 @@ struct T3LiveContainerOverlayView: View {
                     bundleIdOverride: "builtinSideStore",
                     urlStr: urlStr
                 )
+                T3OverlayAppModelDelegate.hasLaunchedSideStore = true
                 logEvent("embedded SideStore guest launched")
             } catch {
                 let message = "\(error)"

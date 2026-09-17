@@ -2,9 +2,9 @@
 set -eu
 
 LIVECONTAINER_REPOSITORY="https://github.com/LiveContainer/LiveContainer.git"
-# Upstream pin. Override with LIVECONTAINER_REVISION=latest to build against
-# upstream main's HEAD, or use bump-livecontainer.sh to advance the pin safely.
-LIVECONTAINER_REVISION=${LIVECONTAINER_REVISION:-"7e356bc3ab0e05584977281937da9308740b997b"}
+# Upstream revision. "latest" tracks upstream main's HEAD (the resolved
+# revision is printed during the build); a full SHA pins an exact snapshot.
+LIVECONTAINER_REVISION=${LIVECONTAINER_REVISION:-"latest"}
 T3_LIVE_BUNDLE_IDENTIFIER=${T3_LIVE_BUNDLE_IDENTIFIER:-"codes.t3.t3code-live"}
 T3_LIVE_URL_SCHEME="t3code-livecontainer"
 T3_LIVE_DISPLAY_NAME=${T3_LIVE_DISPLAY_NAME:-"T3 Code Live"}
@@ -59,9 +59,17 @@ if [ "$LIVECONTAINER_REVISION" = "latest" ]; then
     printf 'Tracking upstream main: %s\n' "$LIVECONTAINER_REVISION"
 fi
 
-git -C "$LIVECONTAINER_DIRECTORY" fetch --depth=1 origin "$LIVECONTAINER_REVISION"
-git -C "$LIVECONTAINER_DIRECTORY" checkout --detach "$LIVECONTAINER_REVISION"
+# GitHub rejects shallow fetches of non-branch-tip SHAs ("not our ref"), so
+# always fetch main and check out the pinned revision from whatever it delivered.
+if ! git -C "$LIVECONTAINER_DIRECTORY" cat-file -e "$LIVECONTAINER_REVISION" 2>/dev/null; then
+    git -C "$LIVECONTAINER_DIRECTORY" fetch --depth=1 origin main
+fi
+if ! git -C "$LIVECONTAINER_DIRECTORY" cat-file -e "$LIVECONTAINER_REVISION" 2>/dev/null; then
+    git -C "$LIVECONTAINER_DIRECTORY" fetch --unshallow origin main
+fi
+git -C "$LIVECONTAINER_DIRECTORY" checkout -f --detach "$LIVECONTAINER_REVISION"
 git -C "$LIVECONTAINER_DIRECTORY" reset --hard "$LIVECONTAINER_REVISION"
+git -C "$LIVECONTAINER_DIRECTORY" clean -fd
 git -C "$LIVECONTAINER_DIRECTORY" submodule sync --recursive
 git -C "$LIVECONTAINER_DIRECTORY" submodule update --init --recursive --depth=1
 

@@ -16,6 +16,6 @@ bool LCIsMachOEncrypted(struct mach_header_64 *header);
 uint64_t LCFindSymbolOffset(const char *basePath, const char *symbol);
 struct mach_header_64 *LCGetLoadedImageHeader(int i0, const char* name);
 NSString* getEntitlementXML(struct mach_header_64* header, void** entitlementXMLPtrOut);
-NSString* getLCEntitlementXML(void);
+NSString* getExecutableEntitlementXML(NSString* path);
 bool checkCodeSignature(const char* path);
 bool checkCodeSignatureWithError(const char* path, char* errorMessageOut, size_t errorMessageSize);
