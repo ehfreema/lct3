@@ -612,10 +612,8 @@ struct T3LiveContainerOverlayView: View {
     private func launchEmbeddedSideStore(urlStr: String? = nil) {
         if T3OverlayAppModelDelegate.hasLaunchedSideStore {
             logEvent("embedded SideStore already launched this session; skipping relaunch")
-            await MainActor.run {
-                manualImportError = "SideStore already launched once in this session. Restart T3 Code Live to open it again."
-                isManualImportPresented = true
-            }
+            manualImportError = "SideStore already launched once in this session. Restart T3 Code Live to open it again."
+            isManualImportPresented = true
             return
         }
         Task {
