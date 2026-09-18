@@ -12,6 +12,12 @@ artifact to the phone, and runs it on-device through the LiveContainer runtime. 
 else in T3 Code — the server, web app, desktop app, and the provider adapters — is here
 too, kept current with upstream.
 
+<p align="center">
+  <img src="assets/screenshots/pairing-screen.png" width="270" alt="Pairing screen with the signing-certificate entry">
+  &nbsp;
+  <img src="assets/screenshots/certificate-import.png" width="270" alt="Certificate import with built-in SideStore">
+</p>
+
 ## What it adds
 
 - **Run iOS App from a thread.** Pick an Xcode project or a build recipe, and the server builds a
