@@ -488,14 +488,13 @@ struct T3LiveContainerOverlayView: View {
         // Apple ID inside this app; the minted certificate lands in the shared
         // keychain and the poller below imports it without any external app.
         if UserDefaults.sideStoreExist() {
-            let state = UUID().uuidString
-            certificateRequestState = state
-            certificateRequestStartedAt = .now
-            logEvent("embedded SideStore present, launching for sign-in")
-            launchEmbeddedSideStore(
-                urlStr: "certificate?callback_template=\(certificateCallbackTemplate())&state=\(state)"
-            )
-            scheduleCertificateImportPolling()
+            // Present the sheet and let the user start the sign-in. The guest
+            // launch itself stays explicit: SideStore's CoreData stack is
+            // single-load per process, and dropping the user into a foreign
+            // UI on first open is hostile.
+            logEvent("embedded SideStore present, presenting certificate sheet")
+            isManualImportPresented = true
+            startKeychainRefreshPolling()
             return nil
         }
         let state = UUID().uuidString
